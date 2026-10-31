@@ -76,14 +76,26 @@ jobs:
           set -e
           cd ios/App
           pod install
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
-            -archivePath build/App.xcarchive archive \
-            DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Manual IPHONEOS_DEPLOYMENT_TARGET=16.4 \
-            CODE_SIGN_IDENTITY="Apple Development" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
-            CODE_SIGN_ENTITLEMENTS=App/App.entitlements \
-            PRODUCT_BUNDLE_IDENTIFIER=ca.cielomontreal.caisse \
-            OTHER_CODE_SIGN_FLAGS="--keychain build.keychain" | xcpretty || true
+          # Signature manuelle sur la cible App seulement (pas sur les Pods)
+          python3 - <<'PY'
+          import re
+          p='App.xcodeproj/project.pbxproj'; s=open(p).read()
+          def fix(m):
+              b=m.group(0)
+              if 'PRODUCT_BUNDLE_IDENTIFIER' not in b or 'TEST_HOST' in b: return b
+              b=re.sub(r'\s*CODE_SIGN_STYLE = \w+;','',b)
+              b=re.sub(r'\s*DEVELOPMENT_TEAM = [^;]*;','',b)
+              b=re.sub(r'\s*PROVISIONING_PROFILE_SPECIFIER = [^;]*;','',b)
+              b=re.sub(r'\s*CODE_SIGN_IDENTITY = [^;]*;','',b)
+              b=re.sub(r'\s*CODE_SIGN_ENTITLEMENTS = [^;]*;','',b)
+              return b.replace('buildSettings = {','buildSettings = {\n\t\t\t\tCODE_SIGN_STYLE = Manual;\n\t\t\t\tDEVELOPMENT_TEAM = 9HG344VX7Z;\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "Caisse Cielo Dev";\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Development";\n\t\t\t\tCODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = ca.cielomontreal.caisse;',1)
+          s2=re.sub(r'buildSettings = \{.*?\};',fix,s,flags=re.S)
+          open(p,'w').write(s2); print('cibles App modifiées:', s2.count('PROVISIONING_PROFILE_SPECIFIER = "Caisse Cielo Dev"'))
+          PY
+          set -o pipefail
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive archive IPHONEOS_DEPLOYMENT_TARGET=16.4 \
+            OTHER_CODE_SIGN_FLAGS="--keychain build.keychain" 2>&1 | grep -E --line-buffered "error:|error |warning: .*(sign|profil)|ARCHIVE|Signing Identity|Provisioning Profile" || true
           test -d build/App.xcarchive
           cat > ExportOptions.plist <<EOT
           <?xml version="1.0" encoding="UTF-8"?>
@@ -98,7 +110,7 @@ jobs:
             <key>thinning</key><string>&lt;none&gt;</string>
           </dict></plist>
           EOT
-          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/out
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/out 2>&1 | grep -E "error|Exported|EXPORT" || true
           ls -la build/out
       - name: Page d'installation
         run: |
