@@ -20,8 +20,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm install
-      - run: npx cap add ios
-      - run: npx cap sync ios
+      - name: Projet Xcode (cible iOS 16.4 — requis par Tap to Pay)
+        run: |
+          npx cap add ios || true
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '16.4'/" ios/App/Podfile
+          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.4;/g" ios/App/App.xcodeproj/project.pbxproj
+          grep -n "platform :ios" ios/App/Podfile
+          npx cap sync ios
       - name: Réglages de l'app (Tap to Pay, permissions, icône)
         run: |
           P=ios/App/App/Info.plist
@@ -70,7 +75,7 @@ jobs:
           pod install
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
             -archivePath build/App.xcarchive archive \
-            DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Manual IPHONEOS_DEPLOYMENT_TARGET=16.4 \
             CODE_SIGN_IDENTITY="Apple Development" \
             PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
             CODE_SIGN_ENTITLEMENTS=App/App.entitlements \
