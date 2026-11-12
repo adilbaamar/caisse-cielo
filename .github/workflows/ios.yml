@@ -28,10 +28,21 @@ jobs:
           sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 9HG344VX7Z;/g; s/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'DEVELOPMENT_TEAM = 9HG344VX7Z' ios/App/App.xcodeproj/project.pbxproj || sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = 9HG344VX7Z;/g' ios/App/App.xcodeproj/project.pbxproj
       - name: Clé App Store Connect
-        env: { ASC_KEY_P8: "${{ secrets.ASC_KEY_P8 }}" }
+        env: { ASC_KEY_P8: "${{ secrets.ASC_KEY_P8 }}", ASC_KEY_ID: "${{ secrets.ASC_KEY_ID }}" }
         run: |
           mkdir -p ~/private_keys
-          printf '%s' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          python3 - <<'PY'
+          import os,re,base64,textwrap
+          raw=os.environ['ASC_KEY_P8'].strip()
+          body=re.sub(r'\s+','',re.sub(r'-----(BEGIN|END)[^-]*-----','',raw))
+          if not body.startswith('MIG'):
+              try: body=re.sub(r'\s+','',re.sub(r'-----(BEGIN|END)[^-]*-----','',base64.b64decode(body).decode()))
+              except Exception: pass
+          pem='-----BEGIN PRIVATE KEY-----\n'+'\n'.join(textwrap.wrap(body,64))+'\n-----END PRIVATE KEY-----\n'
+          open(os.path.expanduser('~/private_keys/AuthKey_'+os.environ['ASC_KEY_ID']+'.p8'),'w').write(pem)
+          print('cle ecrite,', len(body), 'caracteres base64')
+          PY
+          openssl pkey -in ~/private_keys/AuthKey_$ASC_KEY_ID.p8 -noout && echo "PEM valide"
       - name: Archive (signature automatique via la clé API)
         run: |
           xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
