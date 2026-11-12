@@ -49,20 +49,13 @@ jobs:
           print('cle ecrite,', len(body), 'caracteres base64')
           PY
           openssl pkey -in ~/private_keys/AuthKey_$ASC_KEY_ID.p8 -noout && echo "PEM valide"
-      - name: Archive (signature automatique via la clé API)
-        run: |
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
-            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive archive \
-            -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
-            DEVELOPMENT_TEAM=9HG344VX7Z CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Distribution"
-      - name: Envoi vers App Store Connect
-        run: |
-          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/out \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
+      - name: Compilation + envoi TestFlight (fastlane)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: /Users/runner/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+        run: fastlane ios beta
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: ios-build-logs, path: build/out, if-no-files-found: ignore }
+        with: { name: ios-build, path: build, if-no-files-found: ignore }
