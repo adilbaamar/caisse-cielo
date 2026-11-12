@@ -1,0 +1,18 @@
+# Cielo Montréal — envoi automatique sur TestFlight depuis GitHub Actions (aucun Mac requis)
+default_platform(:ios)
+platform :ios do
+  lane :beta do
+    api_key = app_store_connect_api_key(key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], key_filepath: ENV["ASC_KEY_PATH"])
+    create_keychain(name: "ci", password: "ci", default_keychain: true, unlock: true, timeout: 3600, add_to_search_list: true)
+    # Certificat Apple Distribution (créé via l'API si aucun n'est utilisable sur ce Mac) + profil App Store
+    get_certificates(development: false, generate_apple_certs: true, api_key: api_key, keychain_path: File.expand_path("~/Library/Keychains/ci-db"), keychain_password: "ci")
+    get_provisioning_profile(app_identifier: "ca.cielomontreal.commande", api_key: api_key, force: true, filename: "cielo_appstore.mobileprovision")
+    profile = lane_context[SharedValues::SIGH_NAME]
+    update_code_signing_settings(use_automatic_signing: false, path: "ios/App/App.xcodeproj", team_id: "9HG344VX7Z",
+      code_sign_identity: "Apple Distribution", profile_name: profile, bundle_identifier: "ca.cielomontreal.commande", targets: ["App"])
+    build_app(workspace: "ios/App/App.xcworkspace", scheme: "App", configuration: "Release", export_method: "app-store",
+      output_directory: "build", output_name: "Cielo.ipa",
+      export_options: { signingStyle: "manual", provisioningProfiles: { "ca.cielomontreal.commande" => profile }, uploadSymbols: true })
+    upload_to_testflight(api_key: api_key, ipa: "build/Cielo.ipa", skip_waiting_for_build_processing: true)
+  end
+end
