@@ -1,18 +1,23 @@
 {
-  "name": "caisse-cielo",
+  "name": "cielo-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Caisse Cielo — app iPhone/iPad (Tap to Pay sur iPhone via Stripe Terminal)",
+  "description": "Cielo Montréal — application de commande (enveloppe native iOS/Android du site commande.cielomontreal.ca)",
   "scripts": {
-    "sync": "npx cap sync ios",
-    "open": "npx cap open ios"
+    "assets": "npx @capacitor/assets generate --iconBackgroundColor '#7DA2BC' --iconBackgroundColorDark '#2f5068' --splashBackgroundColor '#eef6f9' --splashBackgroundColorDark '#172a36'",
+    "ios": "npx cap add ios && npm run assets -- --ios",
+    "android": "npx cap add android && npm run assets -- --android"
   },
   "dependencies": {
-    "@capacitor/core": "^6.1.2",
-    "@capacitor/ios": "^6.1.2",
-    "@capacitor-community/stripe-terminal": "^6.3.0"
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/ios": "^7.4.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.0"
   }
 }

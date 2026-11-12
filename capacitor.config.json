@@ -1,14 +1,15 @@
 {
-  "appId": "ca.cielomontreal.caisse",
-  "appName": "Caisse Cielo",
+  "appId": "ca.cielomontreal.commande",
+  "appName": "Cielo",
   "webDir": "www",
   "server": {
-    "url": "https://caisse.cielomontreal.ca",
-    "allowNavigation": ["caisse.cielomontreal.ca", "commande.cielomontreal.ca", "borne.cielomontreal.ca", "cielo-caisse.netlify.app", "*.stripe.com", "*.supabase.co"]
+    "url": "https://commande.cielomontreal.ca/commande.html?app=1",
+    "allowNavigation": ["commande.cielomontreal.ca", "*.cielomontreal.ca", "checkout.stripe.com", "*.stripe.com", "*.uber.com"]
   },
-  "ios": {
-    "contentInset": "always",
-    "backgroundColor": "#7DA2BC",
-    "preferredContentMode": "mobile"
+  "ios": { "contentInset": "automatic", "backgroundColor": "#eef6f9", "scheme": "Cielo", "limitsNavigationsToAppBoundDomains": false },
+  "android": { "backgroundColor": "#eef6f9", "allowMixedContent": false },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#eef6f9", "showSpinner": false },
+    "StatusBar": { "style": "LIGHT", "backgroundColor": "#7DA2BC" }
   }
 }
