@@ -31,6 +31,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Cielo" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
+          sed -i '' 's/TARGETED_DEVICE_FAMILY = "1,2";/TARGETED_DEVICE_FAMILY = 1;/g' ios/App/App.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 9HG344VX7Z;/g; s/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'DEVELOPMENT_TEAM = 9HG344VX7Z' ios/App/App.xcodeproj/project.pbxproj || sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = 9HG344VX7Z;/g' ios/App/App.xcodeproj/project.pbxproj
       - name: Clé App Store Connect
