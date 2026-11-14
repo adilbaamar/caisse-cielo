@@ -34,7 +34,7 @@ jobs:
       - name: Clé de signature (si configurée)
         env: { KS: "${{ secrets.ANDROID_KEYSTORE_B64 }}", PW: "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" }
         run: |
-          if [ -n "$KS" ]; then echo "$KS" | base64 -d > cielo.jks; echo "SIGNED=1" >> $GITHUB_ENV; echo "Clé de signature présente → AAB Google Play"; else echo "SIGNED=0" >> $GITHUB_ENV; echo "::notice::Aucune clé de signature : APK de test (debug) seulement"; fi
+          if [ -n "$KS" ]; then echo "$KS" | tr -d '\r\n ' | base64 -d > cielo.jks; echo "keystore: $(wc -c < cielo.jks) octets, sha256 $(sha256sum cielo.jks | cut -c1-16), mot de passe ${#PW} caractères"; keytool -list -keystore cielo.jks -storepass "$PW" >/dev/null && echo "clé OK" || { echo "::error::Clé ou mot de passe invalide"; exit 1; }; echo "SIGNED=1" >> $GITHUB_ENV; echo "Clé de signature présente → AAB Google Play"; else echo "SIGNED=0" >> $GITHUB_ENV; echo "::notice::Aucune clé de signature : APK de test (debug) seulement"; fi
       - name: APK de test (debug)
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon -q && cp app/build/outputs/apk/debug/app-debug.apk ../Cielo-test.apk
       - name: AAB signé (Google Play)
