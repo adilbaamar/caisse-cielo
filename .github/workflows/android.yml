@@ -1,0 +1,47 @@
+name: Android → APK / Google Play
+# Compile l'app Cielo (Capacitor) pour Android.
+#  - Sans secrets : APK de test (signature debug) à installer directement sur un téléphone Android.
+#  - Avec secrets ANDROID_KEYSTORE_B64 + ANDROID_KEYSTORE_PASSWORD : AAB signé prêt pour la Google Play Console.
+on:
+  workflow_dispatch:
+  push:
+    branches: [android]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - name: Dépendances + projet Android
+        run: |
+          npm install
+          npx cap add android
+          npx @capacitor/assets generate --android --iconBackgroundColor '#7DA2BC' --iconBackgroundColorDark '#2f5068' --splashBackgroundColor '#eef6f9' --splashBackgroundColorDark '#172a36'
+          npx cap sync android
+      - name: Version, nom, permissions
+        run: |
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          sed -i 's/<string name="app_name">Cielo<\/string>/<string name="app_name">Cielo Montréal<\/string>/; s/<string name="title_activity_main">Cielo<\/string>/<string name="title_activity_main">Cielo Montréal<\/string>/' android/app/src/main/res/values/strings.xml
+          grep -n 'version' android/app/build.gradle | head -3
+      - name: Clé de signature (si configurée)
+        env: { KS: "${{ secrets.ANDROID_KEYSTORE_B64 }}", PW: "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" }
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > cielo.jks; echo "SIGNED=1" >> $GITHUB_ENV; echo "Clé de signature présente → AAB Google Play"; else echo "SIGNED=0" >> $GITHUB_ENV; echo "::notice::Aucune clé de signature : APK de test (debug) seulement"; fi
+      - name: APK de test (debug)
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon -q && cp app/build/outputs/apk/debug/app-debug.apk ../Cielo-test.apk
+      - name: AAB signé (Google Play)
+        if: env.SIGNED == '1'
+        env: { PW: "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" }
+        run: |
+          cd android && ./gradlew bundleRelease --no-daemon -q
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 -keystore ../cielo.jks -storepass "$PW" app/build/outputs/bundle/release/app-release.aab cielo
+          cp app/build/outputs/bundle/release/app-release.aab ../Cielo-googleplay.aab
+      - uses: actions/upload-artifact@v4
+        with: { name: Cielo-Android-test-apk, path: Cielo-test.apk }
+      - uses: actions/upload-artifact@v4
+        if: env.SIGNED == '1'
+        with: { name: Cielo-GooglePlay-aab, path: Cielo-googleplay.aab }
