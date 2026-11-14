@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches: [android]
+permissions: { contents: write }
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -48,3 +49,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.SIGNED == '1'
         with: { name: Cielo-GooglePlay-aab, path: Cielo-googleplay.aab }
+      - name: Publier l'APK de test (Release GitHub « android-test »)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          cp Cielo-test.apk Cielo-Montreal-Android-test.apk
+          gh release view android-test >/dev/null 2>&1 || gh release create android-test --title "Cielo Montréal — Android (test)" --notes "APK de test à installer directement sur Android (autoriser « sources inconnues »). Mis à jour à chaque compilation." --prerelease
+          gh release upload android-test Cielo-Montreal-Android-test.apk --clobber
+          echo "::notice::APK : https://github.com/${{ github.repository }}/releases/download/android-test/Cielo-Montreal-Android-test.apk"
