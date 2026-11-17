@@ -4,12 +4,31 @@
   "webDir": "www",
   "server": {
     "url": "https://commande.cielomontreal.ca/commande.html?app=1",
-    "allowNavigation": ["commande.cielomontreal.ca", "*.cielomontreal.ca", "checkout.stripe.com", "*.stripe.com", "*.uber.com"]
+    "allowNavigation": [
+      "commande.cielomontreal.ca",
+      "*.cielomontreal.ca"
+    ]
   },
-  "ios": { "contentInset": "automatic", "backgroundColor": "#eef6f9", "scheme": "Cielo", "limitsNavigationsToAppBoundDomains": false },
-  "android": { "backgroundColor": "#eef6f9", "allowMixedContent": false },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#eef6f9",
+    "scheme": "Cielo",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "android": {
+    "backgroundColor": "#eef6f9",
+    "allowMixedContent": false
+  },
   "plugins": {
-    "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#eef6f9", "showSpinner": false },
-    "StatusBar": { "style": "LIGHT", "backgroundColor": "#7DA2BC" }
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#eef6f9",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#7DA2BC"
+    }
   }
 }
