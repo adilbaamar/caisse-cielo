@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with: { node-version: 22 }
       - name: Xcode 26 (SDK iOS 26 requis par Apple)
         run: |
           ls -d /Applications/Xcode*.app
@@ -22,20 +22,42 @@ jobs:
       - name: Dépendances + projet iOS
         run: |
           npm install
-          npx cap add ios
+          npx cap add ios --packagemanager CocoaPods
           npx @capacitor/assets generate --ios --iconBackgroundColor '#7DA2BC' --iconBackgroundColorDark '#2f5068' --splashBackgroundColor '#eef6f9' --splashBackgroundColorDark '#172a36'
           npx cap sync ios
       - name: Numéro de build + équipe
         run: |
           BUILD=${{ github.run_number }}
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist || true
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.1" ios/App/App/Info.plist || true
-          sed -i '' 's/MARKETING_VERSION = 1.0;/MARKETING_VERSION = 1.1;/g' ios/App/App.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.2" ios/App/App/Info.plist || true
+          sed -i '' 's/MARKETING_VERSION = 1.0;/MARKETING_VERSION = 1.2;/g' ios/App/App.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Cielo" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
           sed -i '' 's/TARGETED_DEVICE_FAMILY = "1,2";/TARGETED_DEVICE_FAMILY = 1;/g' ios/App/App.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 9HG344VX7Z;/g; s/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g' ios/App/App.xcodeproj/project.pbxproj
           grep -q 'DEVELOPMENT_TEAM = 9HG344VX7Z' ios/App/App.xcodeproj/project.pbxproj || sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = 9HG344VX7Z;/g' ios/App/App.xcodeproj/project.pbxproj
+      - name: Meta (SDK Facebook, ATT, SKAdNetwork)
+        run: |
+          P=ios/App/App/Info.plist
+          B=/usr/libexec/PlistBuddy
+          $B -c "Add :FacebookAppID string 1195715893123623" $P || $B -c "Set :FacebookAppID 1195715893123623" $P
+          $B -c "Add :FacebookClientToken string b1e3492963493f667e0d53c6f3d58daf" $P || $B -c "Set :FacebookClientToken b1e3492963493f667e0d53c6f3d58daf" $P
+          $B -c "Add :FacebookDisplayName string Cielo Montréal" $P || true
+          $B -c "Add :FacebookAutoLogAppEventsEnabled bool true" $P || true
+          $B -c "Add :FacebookAdvertiserIDCollectionEnabled bool true" $P || true
+          $B -c "Add :NSUserTrackingUsageDescription string Permet de vous montrer des offres Cielo pertinentes." $P || true
+          $B -c "Add :CFBundleURLTypes array" $P || true
+          $B -c "Add :CFBundleURLTypes:0 dict" $P
+          $B -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" $P
+          $B -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string fb1195715893123623" $P
+          $B -c "Add :LSApplicationQueriesSchemes array" $P || true
+          for s in fbapi fbauth2 fbshareextension fb-messenger-share-api; do $B -c "Add :LSApplicationQueriesSchemes:0 string $s" $P; done
+          $B -c "Add :SKAdNetworkItems array" $P || true
+          for k in v9wttpbfk9.skadnetwork n38lu8286q.skadnetwork; do
+            $B -c "Add :SKAdNetworkItems:0 dict" $P
+            $B -c "Add :SKAdNetworkItems:0:SKAdNetworkIdentifier string $k" $P
+          done
+          plutil -lint $P && plutil -p $P | head -80
       - name: Clé App Store Connect
         env: { ASC_KEY_P8: "${{ secrets.ASC_KEY_P8 }}", ASC_KEY_ID: "${{ secrets.ASC_KEY_ID }}" }
         run: |
