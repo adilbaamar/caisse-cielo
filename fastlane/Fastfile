@@ -6,6 +6,16 @@ platform :ios do
     create_keychain(name: "ci", password: "ci", default_keychain: true, unlock: true, timeout: 3600, add_to_search_list: true)
     # Certificat Apple Distribution (créé via l'API si aucun n'est utilisable sur ce Mac) + profil App Store
     get_certificates(development: false, generate_apple_certs: true, api_key: api_key, keychain_path: File.expand_path("~/Library/Keychains/ci-db"), keychain_password: "ci")
+    # Capacité Push Notifications sur l'identifiant de l'app (nécessaire pour l'entitlement aps-environment)
+    begin
+      Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], filepath: ENV["ASC_KEY_PATH"])
+      bid = Spaceship::ConnectAPI::BundleId.find("ca.cielomontreal.commande")
+      unless bid.get_capabilities.any? { |c| c.capability_type == "PUSH_NOTIFICATIONS" }
+        bid.create_capability("PUSH_NOTIFICATIONS"); UI.success("Push activé sur l'App ID")
+      end
+    rescue => e
+      UI.important("Activation push : #{e.message}")
+    end
     get_provisioning_profile(app_identifier: "ca.cielomontreal.commande", api_key: api_key, force: true, filename: "cielo_appstore.mobileprovision")
     profile = lane_context[SharedValues::SIGH_NAME]
     update_code_signing_settings(use_automatic_signing: false, path: "ios/App/App.xcodeproj", team_id: "9HG344VX7Z",
