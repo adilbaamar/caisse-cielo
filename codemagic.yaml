@@ -1,0 +1,22 @@
+# Compilation iOS sur Codemagic (Mac M2) — mêmes étapes que .github/workflows/ios.yml
+# Groupe de variables « cielo_asc » à créer dans Codemagic : ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      groups: [cielo_asc]
+      node: 22
+      xcode: latest
+    triggering:
+      events: [push]
+      branch_patterns: [{ pattern: main, include: true }]
+    scripts:
+      - name: Compilation + TestFlight
+        script: |
+          pip3 install --quiet pyyaml || python3 -m pip install --quiet --break-system-packages pyyaml
+          gem list -i fastlane >/dev/null || gem install fastlane --no-document
+          python3 ci/run-steps.py
+    artifacts:
+      - build/*.ipa
