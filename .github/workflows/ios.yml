@@ -91,10 +91,10 @@ jobs:
           python3 - <<'PY'
           p='ios/App/App/AppDelegate.swift';s=open(p).read()
           if 'CieloZone' not in s:
-              s=s.replace('import Capacitor','import Capacitor\nimport CieloGeofence',1)
               s=s.replace('didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {','didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n        CieloZone.shared.demarrer()',1)
+              s+='\n'+open('ios-zone.swift').read()
               open(p,'w').write(s)
-          print('zone OK', 'CieloZone' in s)
+          print('zone OK', 'CieloZone.shared.demarrer' in s)
           PY
       - name: Clé App Store Connect
         env: { ASC_KEY_P8: "${{ secrets.ASC_KEY_P8 }}", ASC_KEY_ID: "${{ secrets.ASC_KEY_ID }}" }
