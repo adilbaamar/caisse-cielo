@@ -29,8 +29,8 @@ jobs:
         run: |
           BUILD=${{ github.run_number }}
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist || true
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.2" ios/App/App/Info.plist || true
-          sed -i '' 's/MARKETING_VERSION = 1.0;/MARKETING_VERSION = 1.2;/g' ios/App/App.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.3" ios/App/App/Info.plist || true
+          sed -i '' 's/MARKETING_VERSION = 1.0;/MARKETING_VERSION = 1.3;/g' ios/App/App.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Cielo" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
           sed -i '' 's/TARGETED_DEVICE_FAMILY = "1,2";/TARGETED_DEVICE_FAMILY = 1;/g' ios/App/App.xcodeproj/project.pbxproj
@@ -82,6 +82,19 @@ jobs:
           '''
               i=s.rstrip().rfind('}');s=s[:i]+add;open(p,'w').write(s)
           print('AppDelegate OK')
+          PY
+      - name: Localisation (zone Cielo)
+        run: |
+          P=ios/App/App/Info.plist; B=/usr/libexec/PlistBuddy
+          $B -c "Add :NSLocationWhenInUseUsageDescription string Pour vous avertir des offres quand vous êtes près de Cielo." $P || true
+          $B -c "Add :NSLocationAlwaysAndWhenInUseUsageDescription string Pour vous avertir des offres quand vous passez près de Cielo, même quand l'app est fermée. Votre position n'est jamais envoyée à Cielo." $P || true
+          python3 - <<'PY'
+          p='ios/App/App/AppDelegate.swift';s=open(p).read()
+          if 'CieloZone' not in s:
+              s=s.replace('import Capacitor','import Capacitor\nimport CieloGeofence',1)
+              s=s.replace('didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {','didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n        CieloZone.shared.demarrer()',1)
+              open(p,'w').write(s)
+          print('zone OK', 'CieloZone' in s)
           PY
       - name: Clé App Store Connect
         env: { ASC_KEY_P8: "${{ secrets.ASC_KEY_P8 }}", ASC_KEY_ID: "${{ secrets.ASC_KEY_ID }}" }
