@@ -1,4 +1,4 @@
 node_modules/
-ios/
+/ios/
 *.p12
 *.mobileprovision
